@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { findSharedGames, mapLimit } from "@/lib/match.ts";
 import { parseProfileInput } from "@/lib/profile.ts";
-import { getAppDetails, getPlayers, isMock, resolveSteamId } from "@/lib/steam.ts";
+import { getAppDetails, getPlayers, isMock, resolveSteamId, SteamKeyError } from "@/lib/steam.ts";
 import type { MatchResult, ProfileError } from "@/lib/types.ts";
 
 const MAX_PLAYERS = 8;
@@ -59,6 +59,15 @@ export async function POST(req: Request) {
     return NextResponse.json(result);
   } catch (err) {
     console.error(err);
+    if (err instanceof SteamKeyError) {
+      return NextResponse.json(
+        {
+          error:
+            "This site's Steam API key is missing or invalid. The site owner needs to set STEAM_API_KEY in Vercel (Project → Settings → Environment Variables) and redeploy.",
+        },
+        { status: 500 },
+      );
+    }
     return NextResponse.json({ error: "Couldn't reach Steam. Try again in a minute." }, { status: 502 });
   }
 }

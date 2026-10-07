@@ -9,14 +9,18 @@ const STORE = "https://store.steampowered.com/api";
 
 export const isMock = () => process.env.STEAM_MOCK === "1";
 
+/** The API key is missing or Steam rejected it */
+export class SteamKeyError extends Error {}
+
 function apiKey(): string {
   const key = process.env.STEAM_API_KEY;
-  if (!key) throw new Error("STEAM_API_KEY is not set");
+  if (!key) throw new SteamKeyError("STEAM_API_KEY is not set");
   return key;
 }
 
 async function getJson<T>(url: string, revalidate: number): Promise<T> {
   const res = await fetch(url, { next: { revalidate } });
+  if (res.status === 401 || res.status === 403) throw new SteamKeyError("Steam rejected the API key");
   if (!res.ok) throw new Error(`Steam request failed (${res.status})`);
   return res.json() as Promise<T>;
 }
